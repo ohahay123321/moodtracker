@@ -1,0 +1,10 @@
+vendor/
+node_modules/
+.env
+*.db
+*.sqlite
+assets/uploads/*
+!assets/uploads/.gitkeep
+!assets/uploads/.htaccess
+.DS_Store
+Thumbs.db
