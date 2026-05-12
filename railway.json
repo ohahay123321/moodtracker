@@ -4,7 +4,6 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "",
     "healthcheckPath": "/landing.php",
     "restartPolicyType": "ON_FAILURE"
   }
