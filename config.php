@@ -3,10 +3,11 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (file_exists(__DIR__ . '/.env')) {
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
-    $dotenv->safeLoad();
+    if (file_exists(__DIR__ . '/.env')) {
+        Dotenv\Dotenv::createImmutable(__DIR__)->safeLoad();
+    }
 }
 
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
@@ -22,7 +23,7 @@ function getDB() {
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            die('Database connection failed: ' . $e->getMessage());
+            return null;
         }
     }
     return $db;
@@ -30,6 +31,7 @@ function getDB() {
 
 function initDB() {
     $db = getDB();
+    if (!$db) return;
     
     $db->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
