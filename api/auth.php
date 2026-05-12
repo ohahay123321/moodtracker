@@ -131,18 +131,18 @@ function register() {
                 <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Welcome to MoodTrail!</h1>
                 <p style='text-align: center; color: #64748b; margin-bottom: 24px;'>Click the button below to verify your email address.</p>
                 <div style='text-align: center;'>
-                    <a href='http://{$_SERVER['HTTP_HOST']}/moodtracker/verify.php?token={$token}'
+                    <a href='" . baseUrl() . "/verify.php?token={$token}'
                        style='display: inline-block; padding: 14px 40px; background: #6C63FF; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;'>
                         Verify Email
                     </a>
                 </div>
                 <p style='text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px;'>
                     Or copy this link:<br>
-                    http://{$_SERVER['HTTP_HOST']}/moodtracker/verify.php?token={$token}
+                    " . baseUrl() . "/verify.php?token={$token}
                 </p>
             </div>
         ";
-        $mail->AltBody = "Welcome to MoodTrail!\n\nClick this link to verify your email:\nhttp://{$_SERVER['HTTP_HOST']}/moodtracker/verify.php?token={$token}";
+        $mail->AltBody = "Welcome to MoodTrail!\n\nClick this link to verify your email:\n" . baseUrl() . "/verify.php?token={$token}";
         $mail->send();
         
         $_SESSION['success'] = 'Account created! Please check your email to verify your account.';
@@ -191,18 +191,18 @@ function forgotPassword() {
                     <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Reset Your Password</h1>
                     <p style='text-align: center; color: #64748b; margin-bottom: 24px;'>Click the button below to reset your password. This link expires in 24 hours.</p>
                     <div style='text-align: center;'>
-                        <a href='http://{$_SERVER['HTTP_HOST']}/moodtracker/reset-password.php?token={$token}'
+                        <a href='" . baseUrl() . "/reset-password.php?token={$token}'
                            style='display: inline-block; padding: 14px 40px; background: #6C63FF; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;'>
                             Reset Password
                         </a>
                     </div>
                     <p style='text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px;'>
                         Or copy this link:<br>
-                        http://{$_SERVER['HTTP_HOST']}/moodtracker/reset-password.php?token={$token}
+                        " . baseUrl() . "/reset-password.php?token={$token}
                     </p>
                 </div>
             ";
-            $mail->AltBody = "Reset your MoodTrail password:\n\nhttp://{$_SERVER['HTTP_HOST']}/moodtracker/reset-password.php?token={$token}\n\nThis link expires in 24 hours.";
+            $mail->AltBody = "Reset your MoodTrail password:\n\n" . baseUrl() . "/reset-password.php?token={$token}\n\nThis link expires in 24 hours.";
             $mail->send();
         } catch (Exception $e) {}
     }

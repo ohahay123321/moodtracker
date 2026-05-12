@@ -40,18 +40,18 @@ try {
             <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Hey {$user['name']}! How are you feeling?</h1>
             <p style='text-align: center; color: #64748b; margin-bottom: 24px;'>It's time to check in with yourself. Logging your mood only takes a few seconds.</p>
             <div style='text-align: center;'>
-                <a href='http://{$_SERVER['HTTP_HOST']}/moodtracker/add-mood.php'
+                <a href='" . baseUrl() . "/add-mood.php'
                    style='display: inline-block; padding: 14px 40px; background: #6C63FF; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;'>
                     Log Your Mood
                 </a>
             </div>
             <p style='text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px;'>
                 Track your emotions daily and discover patterns.<br>
-                <a href='http://{$_SERVER['HTTP_HOST']}/moodtracker/dashboard.php' style='color: #6C63FF;'>Visit your dashboard</a>
+                <a href='" . baseUrl() . "/dashboard.php' style='color: #6C63FF;'>Visit your dashboard</a>
             </p>
         </div>
     ";
-    $mail->AltBody = "Hey {$user['name']}! How are you feeling?\n\nIt's time to check in with yourself. Log your mood here:\nhttp://{$_SERVER['HTTP_HOST']}/moodtracker/add-mood.php";
+    $mail->AltBody = "Hey {$user['name']}! How are you feeling?\n\nIt's time to check in with yourself. Log your mood here:\n" . baseUrl() . "/add-mood.php";
 
     $mail->send();
 

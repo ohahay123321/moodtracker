@@ -58,6 +58,16 @@ function initDB() {
     try { $db->exec("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) DEFAULT NULL"); } catch (PDOException $e) {}
 }
 
+function baseUrl() {
+    $appUrl = getenv('APP_URL');
+    if ($appUrl) return rtrim($appUrl, '/');
+    if (php_sapi_name() === 'cli' || empty($_SERVER['HTTP_HOST'])) {
+        return 'https://' . (getenv('RAILWAY_PUBLIC_DOMAIN') ?: 'moodtrail.app');
+    }
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    return $protocol . '://' . $_SERVER['HTTP_HOST'] . (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false ? '/moodtracker' : '');
+}
+
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
