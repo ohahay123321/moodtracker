@@ -1,2 +1,0 @@
-[php]
-extensions = ["pdo_mysql", "mysqli", "mbstring", "curl", "gd"]
