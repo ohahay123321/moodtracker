@@ -1,8 +1,0 @@
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "deploy": {
-    "startCommand": "php -S 0.0.0.0:$PORT -t .",
-    "healthcheckPath": "/landing.php",
-    "restartPolicyType": "ON_FAILURE"
-  }
-}
