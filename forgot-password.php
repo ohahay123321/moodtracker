@@ -7,7 +7,6 @@
     <title>Forgot Password - MoodTrail</title>
     <link rel="stylesheet" href="assets/css/auth.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌈</text></svg>">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
     <div class="auth-container">
@@ -52,10 +51,6 @@
                 <div class="form-group">
                     <label for="email">Email Address</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                </div>
-                
-                <div class="recaptcha-wrapper">
-                    <div class="g-recaptcha" data-sitekey="<?php echo RECAPTCHA_SITE_KEY; ?>"></div>
                 </div>
                 
                 <button type="submit" class="btn btn-primary" id="forgotBtn">

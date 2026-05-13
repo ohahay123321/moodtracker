@@ -9,7 +9,13 @@ if (!isLoggedIn()) {
     exit;
 }
 
-$db = getDB();
+try {
+    $db = getDB();
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => 'Database error']);
+    exit;
+}
+
 $stmt = $db->prepare("SELECT reminder_enabled, reminder_time FROM users WHERE id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();

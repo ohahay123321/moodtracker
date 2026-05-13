@@ -2,28 +2,15 @@
 session_start();
 require_once '../config.php';
 
-header('Content-Type: application/json');
-
 $action = $_POST['action'] ?? '';
 
-$token = $_POST['g-recaptcha-response'] ?? '';
-if (empty($token) || !verifyRecaptcha($token)) {
-    $_SESSION['error'] = 'Please complete the reCAPTCHA verification';
-    switch ($action) {
-        case 'login':
-            header('Location: ../login.php');
-            break;
-        case 'register':
-            header('Location: ../register.php');
-            break;
-        case 'forgot_password':
-            header('Location: ../forgot-password.php');
-            break;
-        default:
-            echo json_encode(['success' => false, 'message' => 'Invalid action']);
-            break;
+if ($action === 'register') {
+    $token = $_POST['g-recaptcha-response'] ?? '';
+    if (empty($token) || !verifyRecaptcha($token)) {
+        $_SESSION['error'] = 'Please complete the reCAPTCHA verification';
+        header('Location: ../register.php');
+        exit;
     }
-    exit;
 }
 
 switch ($action) {
@@ -36,7 +23,11 @@ switch ($action) {
     case 'forgot_password':
         forgotPassword();
         break;
+    case 'verify_otp':
+        verifyOtp();
+        break;
     default:
+        header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
         break;
 }
@@ -68,12 +59,75 @@ function login() {
         header('Location: ../login.php');
         return;
     }
-    
+
+    $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+
+    $stmt = $db->prepare("UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?");
+    $stmt->execute([$otp, $expires, $user['id']]);
+
+    require_once '../mailer.php';
+    try {
+        sendEmail($user['email'], $user['name'], 'Your login code - MoodTrail', "
+            <div style='font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8f9fa; border-radius: 12px;'>
+                <div style='text-align: center; font-size: 48px; margin-bottom: 16px;'>🔑</div>
+                <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Your Login Code</h1>
+                <p style='text-align: center; color: #64748b; margin-bottom: 24px;'>Use this code to complete your login. It expires in 5 minutes.</p>
+                <div style='text-align: center; background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 24px;'>
+                    <span style='font-size: 36px; letter-spacing: 12px; font-weight: bold; color: #6C63FF; font-family: monospace;'>{$otp}</span>
+                </div>
+                <p style='text-align: center; color: #94a3b8; font-size: 12px;'>
+                    If you didn't request this code, you can safely ignore this email.
+                </p>
+            </div>
+        ", "Your MoodTrail login code is: {$otp}\n\nThis code expires in 5 minutes.");
+    } catch (Exception $e) {
+        $stmt = $db->prepare("UPDATE users SET otp_code = NULL, otp_expires = NULL WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        $_SESSION['error'] = 'Failed to send login code. Please try again.';
+        header('Location: ../login.php');
+        return;
+    }
+
+    $_SESSION['otp_user_id'] = $user['id'];
+    $_SESSION['otp_email'] = $user['email'];
+    header('Location: ../otp.php');
+    exit;
+}
+
+function verifyOtp() {
+    $db = getDB();
+
+    $userId = $_SESSION['otp_user_id'] ?? null;
+    $inputOtp = $_POST['otp'] ?? '';
+
+    if (!$userId || empty($inputOtp)) {
+        $_SESSION['error'] = 'Invalid verification request';
+        header('Location: ../login.php');
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT * FROM users WHERE id = ? AND otp_code = ? AND otp_expires > NOW()");
+    $stmt->execute([$userId, $inputOtp]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$user) {
+        $_SESSION['error'] = 'Invalid or expired code. Please log in again.';
+        unset($_SESSION['otp_user_id'], $_SESSION['otp_email']);
+        header('Location: ../login.php');
+        exit;
+    }
+
+    $stmt = $db->prepare("UPDATE users SET otp_code = NULL, otp_expires = NULL WHERE id = ?");
+    $stmt->execute([$userId]);
+
+    unset($_SESSION['otp_user_id'], $_SESSION['otp_email']);
+
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_name'] = $user['name'];
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_avatar'] = $user['avatar'] ?? null;
-    
+
     header('Location: ../dashboard.php');
     exit;
 }
@@ -122,10 +176,7 @@ function register() {
         $stmt->execute([$name, $email, $hashed_password, $token]);
         
         require_once '../mailer.php';
-        $mail = getMailer();
-        $mail->addAddress($email, $name);
-        $mail->Subject = 'Verify your MoodTrail account';
-        $mail->Body = "
+        sendEmail($email, $name, 'Verify your MoodTrail account', "
             <div style='font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8f9fa; border-radius: 12px;'>
                 <div style='text-align: center; font-size: 48px; margin-bottom: 16px;'>🌈</div>
                 <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Welcome to MoodTrail!</h1>
@@ -141,9 +192,7 @@ function register() {
                     " . baseUrl() . "/verify.php?token={$token}
                 </p>
             </div>
-        ";
-        $mail->AltBody = "Welcome to MoodTrail!\n\nClick this link to verify your email:\n" . baseUrl() . "/verify.php?token={$token}";
-        $mail->send();
+        ", "Welcome to MoodTrail!\n\nClick this link to verify your email:\n" . baseUrl() . "/verify.php?token={$token}");
         
         $_SESSION['success'] = 'Account created! Please check your email to verify your account.';
         header('Location: ../verify-email.php');
@@ -182,10 +231,7 @@ function forgotPassword() {
         
         require_once '../mailer.php';
         try {
-            $mail = getMailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Reset your MoodTrail password';
-            $mail->Body = "
+            sendEmail($email, '', 'Reset your MoodTrail password', "
                 <div style='font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8f9fa; border-radius: 12px;'>
                     <div style='text-align: center; font-size: 48px; margin-bottom: 16px;'>🔐</div>
                     <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Reset Your Password</h1>
@@ -201,9 +247,7 @@ function forgotPassword() {
                         " . baseUrl() . "/reset-password.php?token={$token}
                     </p>
                 </div>
-            ";
-            $mail->AltBody = "Reset your MoodTrail password:\n\n" . baseUrl() . "/reset-password.php?token={$token}\n\nThis link expires in 24 hours.";
-            $mail->send();
+            ", "Reset your MoodTrail password:\n\n" . baseUrl() . "/reset-password.php?token={$token}\n\nThis link expires in 24 hours.");
         } catch (Exception $e) {}
     }
     

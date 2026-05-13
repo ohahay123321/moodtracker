@@ -7,23 +7,59 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
     if (file_exists(__DIR__ . '/.env')) {
         Dotenv\Dotenv::createImmutable(__DIR__)->safeLoad();
+        foreach ($_ENV as $key => $value) {
+            putenv("$key=$value");
+        }
     }
 }
 
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: 'moodtracker');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'));
+define('DB_NAME', getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'moodtracker'));
+define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
+define('DB_PASS', getenv('DB_PASS') ?: (getenv('MYSQLPASSWORD') ?: ''));
+define('DB_PORT', getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306'));
+
+function _dbError() {
+    http_response_code(503);
+    if (php_sapi_name() === 'cli') {
+        echo "Database connection failed\n";
+        exit(1);
+    }
+    $isJson = !empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false;
+    if ($isJson) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Service unavailable']);
+        exit;
+    }
+    ?>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="UTF-8"><title>Service Unavailable - MoodTrail</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/css/style.css">
+    </head>
+    <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);">
+    <div class="card" style="text-align:center;padding:48px;max-width:480px;">
+        <div style="font-size:64px;margin-bottom:16px;">🔌</div>
+        <h1 style="margin-bottom:8px;">Service Unavailable</h1>
+        <p style="color:var(--text-secondary);margin-bottom:24px;">We're having trouble connecting to the database. Please try again in a moment.</p>
+        <a href="landing.php" class="btn btn-primary">Back to Home</a>
+    </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
 function getDB() {
     static $db = null;
     if ($db === null) {
         try {
-            $db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS);
+            $db = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
-            return null;
+            _dbError();
         }
     }
     return $db;
@@ -31,7 +67,6 @@ function getDB() {
 
 function initDB() {
     $db = getDB();
-    if (!$db) return;
     
     $db->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -64,11 +99,16 @@ function initDB() {
     try { $db->exec("ALTER TABLE users ADD COLUMN reset_token_expires DATETIME DEFAULT NULL"); } catch (PDOException $e) {}
     try { $db->exec("ALTER TABLE users ADD COLUMN last_reminder_sent DATE DEFAULT NULL"); } catch (PDOException $e) {}
     try { $db->exec("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) DEFAULT NULL"); } catch (PDOException $e) {}
+    try { $db->exec("ALTER TABLE users ADD COLUMN otp_code VARCHAR(6) DEFAULT NULL"); } catch (PDOException $e) {}
+    try { $db->exec("ALTER TABLE users ADD COLUMN otp_expires DATETIME DEFAULT NULL"); } catch (PDOException $e) {}
 }
 
 function baseUrl() {
     $appUrl = getenv('APP_URL');
-    if ($appUrl) return rtrim($appUrl, '/');
+    if ($appUrl) {
+        if (!preg_match('#^https?://#', $appUrl)) $appUrl = 'https://' . $appUrl;
+        return rtrim($appUrl, '/');
+    }
     if (php_sapi_name() === 'cli' || empty($_SERVER['HTTP_HOST'])) {
         return 'https://' . (getenv('RAILWAY_PUBLIC_DOMAIN') ?: 'moodtrail.app');
     }

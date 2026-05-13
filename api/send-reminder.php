@@ -31,10 +31,7 @@ if ($user['last_reminder_sent'] === $today) {
 require_once '../mailer.php';
 
 try {
-    $mail = getMailer();
-    $mail->addAddress($user['email'], $user['name']);
-    $mail->Subject = 'Time to log your mood! - MoodTrail';
-    $mail->Body = "
+    sendEmail($user['email'], $user['name'], 'Time to log your mood! - MoodTrail', "
         <div style='font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f8f9fa; border-radius: 12px;'>
             <div style='text-align: center; font-size: 48px; margin-bottom: 16px;'>🌈</div>
             <h1 style='text-align: center; color: #1a1a2e; margin-bottom: 8px;'>Hey {$user['name']}! How are you feeling?</h1>
@@ -50,10 +47,7 @@ try {
                 <a href='" . baseUrl() . "/dashboard.php' style='color: #6C63FF;'>Visit your dashboard</a>
             </p>
         </div>
-    ";
-    $mail->AltBody = "Hey {$user['name']}! How are you feeling?\n\nIt's time to check in with yourself. Log your mood here:\n" . baseUrl() . "/add-mood.php";
-
-    $mail->send();
+    ", "Hey {$user['name']}! How are you feeling?\n\nIt's time to check in with yourself. Log your mood here:\n" . baseUrl() . "/add-mood.php");
 
     $update = $db->prepare("UPDATE users SET last_reminder_sent = ? WHERE id = ?");
     $update->execute([$today, $user_id]);

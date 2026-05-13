@@ -76,11 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
-            if (!validateRecaptcha(this)) {
-                e.preventDefault();
-                return false;
-            }
-
             const btn = document.getElementById('loginBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></span> Signing in...';
@@ -90,11 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const forgotForm = document.getElementById('forgotForm');
     if (forgotForm) {
         forgotForm.addEventListener('submit', function(e) {
-            if (!validateRecaptcha(this)) {
-                e.preventDefault();
-                return false;
-            }
-
             const btn = document.getElementById('forgotBtn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></span> Sending...';
