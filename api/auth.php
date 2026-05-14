@@ -61,7 +61,7 @@ function login() {
     }
 
     $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-    $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+    $expires = gmdate('Y-m-d H:i:s', strtotime('+5 minutes'));
 
     $stmt = $db->prepare("UPDATE users SET otp_code = ?, otp_expires = ?, otp_attempts = 0 WHERE id = ?");
     $stmt->execute([$otp, $expires, $user['id']]);
@@ -125,7 +125,7 @@ function verifyOtp() {
         exit;
     }
 
-    $stmt = $db->prepare("SELECT * FROM users WHERE id = ? AND otp_code = ? AND otp_expires > NOW()");
+    $stmt = $db->prepare("SELECT * FROM users WHERE id = ? AND otp_code = ? AND otp_expires > UTC_TIMESTAMP()");
     $stmt->execute([$userId, $inputOtp]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
