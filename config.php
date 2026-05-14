@@ -13,11 +13,21 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     }
 }
 
-define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'));
-define('DB_NAME', getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'moodtracker'));
-define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
-define('DB_PASS', getenv('DB_PASS') ?: (getenv('MYSQLPASSWORD') ?: ''));
-define('DB_PORT', getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306'));
+$mysqlUrl = getenv('MYSQL_URL');
+if ($mysqlUrl) {
+    $parts = parse_url($mysqlUrl);
+    define('DB_HOST', $parts['host'] ?? 'localhost');
+    define('DB_PORT', $parts['port'] ?? '3306');
+    define('DB_USER', $parts['user'] ?? 'root');
+    define('DB_PASS', $parts['pass'] ?? '');
+    define('DB_NAME', trim($parts['path'] ?? 'moodtracker', '/') ?: 'moodtracker');
+} else {
+    define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'localhost'));
+    define('DB_NAME', getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'moodtracker'));
+    define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
+    define('DB_PASS', getenv('DB_PASS') ?: (getenv('MYSQLPASSWORD') ?: ''));
+    define('DB_PORT', getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306'));
+}
 
 function _dbError() {
     http_response_code(503);
