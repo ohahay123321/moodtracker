@@ -25,7 +25,7 @@ function sendEmail($toEmail, $toName, $subject, $htmlBody, $altBody = '') {
 
     if ($mailer === 'brevo') {
         $apiKey = getenv('BREVO_API_KEY');
-        $fromEmail = getenv('MAIL_FROM') ?: getenv('MAIL_FROM_ADDRESS') ?: $toEmail;
+        $fromEmail = getenv('MAIL_FROM') ?: getenv('MAIL_FROM_ADDRESS') ?: 'noreply@moodtrail.app';
         $fromName = getenv('MAIL_FROM_NAME') ?: 'MoodTrail';
 
         $payload = json_encode([

@@ -101,6 +101,7 @@ function initDB() {
     try { $db->exec("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) DEFAULT NULL"); } catch (PDOException $e) {}
     try { $db->exec("ALTER TABLE users ADD COLUMN otp_code VARCHAR(6) DEFAULT NULL"); } catch (PDOException $e) {}
     try { $db->exec("ALTER TABLE users ADD COLUMN otp_expires DATETIME DEFAULT NULL"); } catch (PDOException $e) {}
+    try { $db->exec("ALTER TABLE users ADD COLUMN otp_attempts TINYINT(1) DEFAULT 0"); } catch (PDOException $e) {}
 }
 
 function baseUrl() {

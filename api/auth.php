@@ -63,7 +63,7 @@ function login() {
     $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     $expires = date('Y-m-d H:i:s', strtotime('+5 minutes'));
 
-    $stmt = $db->prepare("UPDATE users SET otp_code = ?, otp_expires = ? WHERE id = ?");
+    $stmt = $db->prepare("UPDATE users SET otp_code = ?, otp_expires = ?, otp_attempts = 0 WHERE id = ?");
     $stmt->execute([$otp, $expires, $user['id']]);
 
     require_once '../mailer.php';
@@ -99,10 +99,28 @@ function verifyOtp() {
     $db = getDB();
 
     $userId = $_SESSION['otp_user_id'] ?? null;
-    $inputOtp = $_POST['otp'] ?? '';
+    $inputOtp = trim($_POST['otp'] ?? '');
 
-    if (!$userId || empty($inputOtp)) {
+    if (!$userId || $inputOtp === '') {
         $_SESSION['error'] = 'Invalid verification request';
+        header('Location: ../login.php');
+        exit;
+    }
+
+    if (!preg_match('/^\d{6}$/', $inputOtp)) {
+        $_SESSION['error'] = 'Invalid code format. Please enter a 6-digit code.';
+        header('Location: ../otp.php');
+        exit;
+    }
+
+    $stmt = $db->prepare("SELECT otp_attempts FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+
+    if ($row && $row['otp_attempts'] >= 5) {
+        $db->prepare("UPDATE users SET otp_code = NULL, otp_expires = NULL, otp_attempts = 0 WHERE id = ?")->execute([$userId]);
+        unset($_SESSION['otp_user_id'], $_SESSION['otp_email']);
+        $_SESSION['error'] = 'Too many incorrect attempts. Please log in again.';
         header('Location: ../login.php');
         exit;
     }
@@ -112,13 +130,13 @@ function verifyOtp() {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
-        $_SESSION['error'] = 'Invalid or expired code. Please log in again.';
-        unset($_SESSION['otp_user_id'], $_SESSION['otp_email']);
-        header('Location: ../login.php');
+        $db->prepare("UPDATE users SET otp_attempts = otp_attempts + 1 WHERE id = ?")->execute([$userId]);
+        $_SESSION['error'] = 'Invalid code. Please try again.';
+        header('Location: ../otp.php');
         exit;
     }
 
-    $stmt = $db->prepare("UPDATE users SET otp_code = NULL, otp_expires = NULL WHERE id = ?");
+    $stmt = $db->prepare("UPDATE users SET otp_code = NULL, otp_expires = NULL, otp_attempts = 0 WHERE id = ?");
     $stmt->execute([$userId]);
 
     unset($_SESSION['otp_user_id'], $_SESSION['otp_email']);
