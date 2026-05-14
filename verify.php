@@ -13,9 +13,10 @@ if (empty($token)) {
 }
 
 $db = getDB();
+
 $stmt = $db->prepare("SELECT id, email_verified FROM users WHERE verification_token = ?");
 $stmt->execute([$token]);
-$user = $stmt->fetch();
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
     $_SESSION['error'] = 'Invalid or expired verification link.';
